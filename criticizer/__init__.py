@@ -65,8 +65,7 @@ def critic():
 
     critic = query.first()
     reviews = [review.to_json() for review in critic.reviews] if critic else []
-    return jsonify(review=reviews)
-
+    return jsonify(reviews=reviews)
 
 def add_movie_to_backend(title):
 
