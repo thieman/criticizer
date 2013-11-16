@@ -100,7 +100,8 @@ def add_movie_to_backend(title):
         review_obj.movie = movie
         review_obj.critic = critic
 
-    session.add(review_obj)
+        session.add(review_obj)
+
     session.commit()
 
 def init_app():
