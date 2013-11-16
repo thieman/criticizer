@@ -7,6 +7,7 @@ class RTAPI(object):
     def __init__(self, api_key):
         self.api_key = api_key
         self.base_url = 'http://api.rottentomatoes.com/api/public/v1.0/'
+        self.max_results_per_page = 50
 
     def _get_url(self, endpoint, full_url):
         return endpoint if full_url else ''.join([self.base_url, endpoint])
@@ -26,19 +27,19 @@ class RTAPI(object):
 
         url = self._get_url(endpoint, full_url)
         payload['page'] = 1
-        payload['page_limit'] = 50
+        payload['page_limit'] = self.max_results_per_page
         first_result = self._get(url, payload, full_url).json()
 
         extracted = first_result.get(extract_key, [])
         total = first_result.get('total', 0)
         page = 2
 
-        while total >= 50:
+        while total >= self.max_results_per_page:
             payload['page'] = page
             api_result = self._get(url, payload, full_url).json()
             extracted.extend(api_result.get(extract_key, []))
             page += 1
-            total -= 50
+            total -= self.max_results_per_page
 
         return extracted
 
