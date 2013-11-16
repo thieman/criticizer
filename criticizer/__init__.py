@@ -27,6 +27,30 @@ def movies():
     data = json.loads(request.args.get('data')).get('movies')
     return jsonify(movies=[rt.search(movie) for movie in data])
 
+@app.route('/review', methods=['GET'])
+def review():
+    """ Given a movie and critic, return a review if it exists.
+
+    Publication may also be provided as an optional match on critic. """
+
+    title = request.args.get('movie')
+    critic = request.args.get('critic')
+    publication = request.args.get('publication')
+    if (not title) or (not critic):
+        abort(400)
+
+    query = session.query(Review, Movie, Critic).\
+        filter(Review.movie_id == Movie.id).\
+        filter(Review.critic_id == Critic.id).\
+        filter(Movie.title == title).\
+        filter(Critic.name == critic)
+
+    if publication:
+        query = query.filter(Critic.publication == publication)
+
+    result = query.first()
+    return jsonify(review=result[0].to_json() if result else {})
+
 @app.route('/reviews', methods=['GET'])
 def reviews():
     """ Return JSON list of the reviews of the given movies. """
@@ -52,7 +76,7 @@ def reviews():
 
 @app.route('/critic', methods=['GET'])
 def critic():
-    """ Return all fresh movies reviewed by a given critic.
+    """ Return all movies reviewed by a given critic.
 
     Takes in name and publication as JSON parameters."""
 
