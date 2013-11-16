@@ -80,12 +80,13 @@ def critic():
 
     Takes in name and publication as JSON parameters."""
 
-    data = json.loads(request.args.get('data'))
-    if 'name' not in data:
+    name = request.args.get('name')
+    publication = request.args.get('publication')
+    if not name:
         abort(400)
-    query = session.query(Critic).filter_by(name=data['name'])
-    if 'publication' in data:
-        query = query.filter_by(publication=data['publication'])
+    query = session.query(Critic).filter_by(name=name)
+    if publication:
+        query = query.filter_by(publication=publication)
 
     critic = query.first()
     reviews = [review.to_json() for review in critic.reviews] if critic else []
