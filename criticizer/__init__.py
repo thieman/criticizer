@@ -5,6 +5,7 @@ import json
 import yaml
 from flask import Flask, request, jsonify, abort
 import sqlalchemy
+from sqlalchemy.sql.expression import func
 from dateutil import parser
 
 from rtapi import RTAPI
@@ -60,7 +61,7 @@ def reviews():
     # TODO: adding stuff to backend should be async
 
     for movie in data:
-        if session.query(Movie).filter_by(title=movie).count() == 0:
+        if session.query(Movie).filter(func.lower(Movie.title) == func.lower(movie)).count() == 0:
             # TODO: handle cases when movie cannot be added to the DB
             try:
                 add_movie_to_backend(movie)
@@ -68,7 +69,7 @@ def reviews():
                 pass
 
     # all movies exist in the backend at this point
-    movies = [session.query(Movie).filter_by(title=movie).first()
+    movies = [session.query(Movie).filter(func.lower(Movie.title) == func.lower(movie)).first()
               for movie in data]
     movies = filter(lambda x: x is not None, movies)
     reviews = [[review.to_json() for review in movie.reviews] for movie in movies]
