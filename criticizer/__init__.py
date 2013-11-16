@@ -3,7 +3,7 @@
 import json
 
 import yaml
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 import sqlalchemy
 from dateutil import parser
 
@@ -37,13 +37,36 @@ def reviews():
 
     for movie in data:
         if session.query(Movie).filter_by(title=movie).count() == 0:
-            add_movie_to_backend(movie)
+            # TODO: handle cases when movie cannot be added to the DB
+            try:
+                add_movie_to_backend(movie)
+            except:
+                pass
 
     # all movies exist in the backend at this point
     movies = [session.query(Movie).filter_by(title=movie).first()
               for movie in data]
+    movies = filter(lambda x: x is not None, movies)
     reviews = [[review.to_json() for review in movie.reviews] for movie in movies]
     return jsonify(reviews=reviews)
+
+@app.route('/critic', methods=['GET'])
+def critic():
+    """ Return all fresh movies reviewed by a given critic.
+
+    Takes in name and publication as JSON parameters."""
+
+    data = json.loads(request.args.get('data'))
+    if 'name' not in data:
+        abort(400)
+    query = session.query(Critic).filter_by(name=data['name'])
+    if 'publication' in data:
+        query = query.filter_by(publication=data['publication'])
+
+    critic = query.first()
+    reviews = [review.to_json() for review in critic.reviews] if critic else []
+    return jsonify(review=reviews)
+
 
 def add_movie_to_backend(title):
 
@@ -51,7 +74,13 @@ def add_movie_to_backend(title):
     if not result:
         raise ValueError('no movie found for {}'.format(title))
 
+    if session.query(Movie).filter_by(id=result['id']).count() != 0:
+        raise ValueError('movie ID {} already exists'.format(result['id']))
+
     movie = Movie(result['id'], result['title'])
+
+    if not result.get('reviews', []):
+        raise KeyError('no reviews for {}'.format(title))
 
     for review in result.get('reviews', []):
         dt = parser.parse(review['date']) if review.get('date', None) else None

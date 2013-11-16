@@ -1,6 +1,9 @@
 """ RottenTomatoes API implementation. """
 
+from datetime import datetime
+
 import requests
+from dateutil import parser
 
 class RTAPI(object):
 
@@ -51,6 +54,11 @@ class RTAPI(object):
         movie_docs = self.search(movie_title).get('movies', None)
         if not movie_docs:
             raise ValueError('could not find movie {}'.format(movie_title))
+
+
+        movie_docs = [movie for movie in movie_docs if self._is_released(movie)]
+        if not movie_docs:
+            raise ValueError('no released movie found for {}'.format(movie_title))
         movie_doc = movie_docs[0]
 
         reviews_url = movie_doc.get('links', {}).get('reviews')
@@ -63,3 +71,11 @@ class RTAPI(object):
         return dict({'reviews': reviews}.items() +
                     {'id': movie_doc.get('id', None),
                      'title': movie_doc.get('title', None)}.items())
+
+    def _is_released(self, movie_doc):
+        if not movie_doc.get('release_dates', None):
+            return False
+        for release_type, release_date in movie_doc['release_dates'].iteritems():
+            if parser.parse(release_date) <= datetime.utcnow():
+                return True
+        return False
