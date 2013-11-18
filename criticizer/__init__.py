@@ -43,11 +43,11 @@ def review():
     query = session.query(Review, Movie, Critic).\
         filter(Review.movie_id == Movie.id).\
         filter(Review.critic_id == Critic.id).\
-        filter(Movie.title == title).\
-        filter(Critic.name == critic)
+        filter(func.lower(Movie.title) == func.lower(title)).\
+        filter(func.lower(Critic.name) == func.lower(critic))
 
     if publication:
-        query = query.filter(Critic.publication == publication)
+        query = query.filter(func.lower(Critic.publication) == func.lower(publication))
 
     result = query.first()
     return jsonify(review=result[0].to_json() if result else {})
@@ -85,9 +85,9 @@ def critic():
     publication = request.args.get('publication')
     if not name:
         abort(400)
-    query = session.query(Critic).filter_by(name=name)
+    query = session.query(Critic).filter(func.lower(Critic.name) == func.lower(name))
     if publication:
-        query = query.filter_by(publication=publication)
+        query = query.filter(func.lower(Critic.publication) == func.lower(publication))
 
     critic = query.first()
     reviews = [review.to_json() for review in critic.reviews] if critic else []
