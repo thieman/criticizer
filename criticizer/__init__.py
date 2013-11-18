@@ -13,14 +13,14 @@ from model import Base, Movie, Critic, Review
 
 app = Flask(__name__)
 
-engine = sqlalchemy.create_engine('sqlite:////home/travis/movie.db')
+config = yaml.load(open('criticizer/config.yml', 'r').read())
+rt = RTAPI(config.get('api_key'))
+
+engine = sqlalchemy.create_engine(config.get('db_string'))
 Session = sqlalchemy.orm.sessionmaker(bind=engine)
 session = Session()
 
 Base.metadata.create_all(engine)
-
-config = yaml.load(open('criticizer/config.yml', 'r').read())
-rt = RTAPI(config.get('api_key'))
 
 @app.route('/movies', methods=['GET'])
 def movies():
